@@ -11,6 +11,8 @@ with open(sys.argv[1],"r") as f:
     arr = np.zeros(shape=(n,n))
     for l in f:
         n1,n2 = map(int, l.split(' '))
+        if n1 == n2:
+            continue
         arr[n1][n2] = 1
         arr[n2][n1] = 1
 
