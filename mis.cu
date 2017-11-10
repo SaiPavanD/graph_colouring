@@ -10,7 +10,7 @@ using namespace thrust;
 class Graph{
   private:
     unsigned int n;
-    device_vector<int> adj_list;
+    device_vector<device_vector<tuple<unsigned int, int>>> adj
 
   public:
     Graph(unsigned int num_vertices){
@@ -18,3 +18,4 @@ class Graph{
     }
     
 };
+
