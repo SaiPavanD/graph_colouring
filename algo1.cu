@@ -27,12 +27,12 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
 
     // Ignore if already colored
     if ((color_assignment[i] != -1)) continue;
-    
+
     // Iterate over neighbours
     for (int mis_i = 0; mis_i < 10; mis_i++) {
         if (r_iflags[i] != 0) break;
         for (unsigned int j = offset_arr[i]; j < offset_arr[i+1]; j++) {
-            // Get neighbour vertex id 
+            // Get neighbour vertex id
             int k = cols_arr[j];
             // Get neighbors color
             int kc = color_assignment[k];
@@ -51,7 +51,7 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
            /*printf("l%d->%d ",color, i);*/
           for (unsigned int jj = offset_arr[i]; jj < offset_arr[i+1]; jj++) {
             r_iflags[jj] = 1;
-          } 
+          }
           /*printf("\n");*/
           break;
         }
@@ -66,6 +66,8 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
 __host__ void mis_coloring(unsigned int num_nodes, unsigned int *offset_arr,
                                  unsigned int *cols_arr, int *color_assignment)
 {
+    std::srand(std::time(0));
+
     //generate rand perm
     thrust::device_vector<unsigned int> d_randoms(num_nodes);
     thrust::device_vector<unsigned int> d_iflags(num_nodes);
@@ -134,8 +136,7 @@ int main(int argc, char *argv[])
     unsigned int n_nodes, n_values;
     std::cin >> n_nodes >> n_values;
     n_nodes -= 1;
-    
-    std::srand(std::time(0));
+
     thrust::host_vector<unsigned int> h_Ao(n_nodes+1), h_Ac(n_values);
     for (int i=0; i<n_nodes+1; i++) {
         std::cin >> h_Ao[i] ;
