@@ -17,19 +17,18 @@ __global__ void color_jpl_kernel(int n, int c, int *Ao,
                                  int *Ac,  
                                  int *randoms, int *colors)
 {   
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        for (int i =0; i< n; i++)
+            printf("-%d ", Ao[i]);
+        printf("Ao\n");
+        for (int i =0; i< Ao[n]; i++)
+            printf("%d ", Ac[i]);
+        printf("Ac\n");
+    }
   for (int i = threadIdx.x+blockIdx.x*blockDim.x; 
        i < n; 
        i += blockDim.x*gridDim.x) 
   {   
-
-    /*if (threadIdx.x == 0 && blockIdx.x == 0) {*/
-        /*for (int i =0; i< n; i++)*/
-            /*printf("-%d ", Ao[i]);*/
-        /*printf("Ao\n");*/
-        /*for (int i =0; i< Ao[n]; i++)*/
-            /*printf("-%d ", Ac[i]);*/
-        /*printf("Ac\n");*/
-    /*}*/
     bool f=true; // true iff you have max random
 
     // ignore nodes colored earlier
@@ -40,6 +39,7 @@ __global__ void color_jpl_kernel(int n, int c, int *Ao,
 
     // look at neighbors to check their random number
     /*printf("YUI %d %d\n" , Ao[i], Ao[i+1]);*/
+    printf("HI %d\n", i);
     for (int k = Ao[i]; k < Ao[i+1]; k++) {        
       // ignore nodes colored earlier (and yourself)
       int j = Ac[k];
@@ -125,6 +125,7 @@ int main(int argc, char *argv[])
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("Error: %s\n", cudaGetErrorString(err));
+        cudaDeviceSynchronize();
         int left = (int)thrust::count(d_colors.begin(), d_colors.end(), -1);
         if (left == 0) break;
     }
