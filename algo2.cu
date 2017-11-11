@@ -73,7 +73,7 @@ __host__ void jpl_coloring(unsigned int num_nodes, unsigned int *offset_arr,
         if (nodes_left == 0)
             break;
     }
-    printf("Nodes : %d, colors : %d", num_nodes, c);
+    printf("Nodes : %d, colors : %d\n", num_nodes, c);
 }
 
 __global__ void check_correctness (unsigned int num_nodes, unsigned int *offset_arr,
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     if(result)
       std::cout << "Check successful " << std::endl;
     else
-      std::cout << "Check unsuccessful " << std::endl;
+      std::cout << "Check failed " << std::endl;
 
     /*for(int i=0; i<n_nodes; i++)*/
         /*std::cout << d_colors[i] << " ";*/
