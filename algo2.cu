@@ -52,6 +52,7 @@ __global__ void jpl_coloring_kernel(unsigned int num_nodes, unsigned int color, 
                break;
            }
     }
+    free(n_colors);
   }
 }
 
