@@ -17,14 +17,14 @@ __global__ void color_jpl_kernel(int n, int c, int *Ao,
                                  int *Ac,  
                                  int *randoms, int *colors)
 {   
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        for (int i =0; i< n; i++)
-            printf("-%d ", Ao[i]);
-        printf("Ao\n");
-        for (int i =0; i< Ao[n]; i++)
-            printf("%d ", Ac[i]);
-        printf("Ac\n");
-    }
+    /*if (threadIdx.x == 0 && blockIdx.x == 0) {*/
+        /*for (int i =0; i< n; i++)*/
+            /*printf("-%d ", Ao[i]);*/
+        /*printf("Ao\n");*/
+        /*for (int i =0; i< Ao[n]; i++)*/
+            /*printf("%d ", Ac[i]);*/
+        /*printf("Ac\n");*/
+    /*}*/
   for (int i = threadIdx.x+blockIdx.x*blockDim.x; 
        i < n; 
        i += blockDim.x*gridDim.x) 
@@ -39,18 +39,18 @@ __global__ void color_jpl_kernel(int n, int c, int *Ao,
 
     // look at neighbors to check their random number
     /*printf("YUI %d %d\n" , Ao[i], Ao[i+1]);*/
-    printf("HI %d\n", i);
+    /*printf("HI %d\n", i);*/
     for (int k = Ao[i]; k < Ao[i+1]; k++) {        
       // ignore nodes colored earlier (and yourself)
       int j = Ac[k];
       int jc = colors[j];
-      printf("Inside for loop %d %d %d %d\n", jc, c, i ,j);
+      /*printf("Inside for loop %d %d %d %d\n", jc, c, i ,j);*/
       if (((jc != -1) && (jc != c)) || (i == j)) continue; 
-      printf("Inside after for loop %d %d %d %d\n", jc, c, i ,j);
+      /*printf("Inside after for loop %d %d %d %d\n", jc, c, i ,j);*/
       int jr = randoms[j];
       if (ir <= jr) {
           f=false;        
-          printf("%d %d %d %d\n", ir, jr, k, i);
+          /*printf("%d %d %d %d\n", ir, jr, k, i);*/
       }
       /*else*/
           /*printf("ER%d %d %d %d\n", ir, jr, k, i);*/
@@ -58,6 +58,31 @@ __global__ void color_jpl_kernel(int n, int c, int *Ao,
 
     // assign color if you have the maximum random number
     if (f) colors[i] = c;
+  }
+}
+
+__global__ void check_correctness(int n, int *Ao, int *Ac, int *colors, bool *result)
+{
+
+ 
+  for (int i = threadIdx.x+blockIdx.x*blockDim.x; 
+       i < n; 
+       i += blockDim.x*gridDim.x) 
+  {   
+      /*if (i == 0) *result = true;*/
+
+    // look at neighbors to check their random number
+    for (int k = Ao[i]; k < Ao[i+1]; k++) {        
+      // ignore nodes colored earlier (and yourself)
+      int j = Ac[k];
+      int jc = colors[j];
+      int ic = colors[i];
+        
+      if (ic == jc) {
+          printf("Node coloring error %d,%d:%d\n", i, j, ic);
+          *result = false;
+      }
+    }
   }
 }
 
@@ -116,21 +141,31 @@ int main(int argc, char *argv[])
     int *r_Ac = thrust::raw_pointer_cast(d_Ac.data());
     int *r_r = thrust::raw_pointer_cast(d_randoms.data());
     int *r_c = thrust::raw_pointer_cast(d_colors.data());
+    
+    int nt = 1024;
+    int nb = min((n_nodes + nt - 1)/nt,CUDA_MAX_BLOCKS);
+
+    bool *result;
+    cudaHostAlloc(&result, sizeof(bool), 0);
+    *result = true;
+
     for(int c=0; c < n_nodes; c++) {
         std::cout << "color: " << c << std::endl;
-        int nt = 256;
-        int nb = min((n_nodes + nt - 1)/nt,CUDA_MAX_BLOCKS);
-        std::cout << "nb:nt" << nb << "-" << nt << std::endl;
-        color_jpl_kernel<<<1, 1>>>(n_nodes, c, r_Ao, r_Ac, r_r, r_c);
+        /*std::cout << "nb:nt" << nb << "-" << nt << std::endl;*/
+        color_jpl_kernel<<<nb, nt>>>(n_nodes, c, r_Ao, r_Ac, r_r, r_c);
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess)
             printf("Error: %s\n", cudaGetErrorString(err));
         cudaDeviceSynchronize();
         int left = (int)thrust::count(d_colors.begin(), d_colors.end(), -1);
+        
         if (left == 0) break;
     }
-    for(int i=0; i<n_nodes; i++)
-        std::cout << d_colors[i] << " ";
-    std::cout << std::endl;
+    check_correctness<<<nb, nt>>>(n_nodes, r_Ao, r_Ac, r_c, result);
+    std::cout << "Result: " << *result << std::endl;
+
+    /*for(int i=0; i<n_nodes; i++)*/
+        /*std::cout << d_colors[i] << " ";*/
+    /*std::cout << std::endl;*/
 
 }
