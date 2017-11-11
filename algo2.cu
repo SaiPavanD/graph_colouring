@@ -24,13 +24,16 @@ __global__ void jpl_coloring_kernel(unsigned int num_nodes, unsigned int color, 
 
     // Ignore if already colored
     if ((color_assignment[i] != -1)) continue;
-
+    
+    bool *n_colors = new bool[color+1];
+    memset(n_colors, 0, sizeof(n_colors)); 
     // Iterate over neighbours
     for (unsigned int j = offset_arr[i]; j < offset_arr[i+1]; j++) {
-      // Get neighbour vertex id
+      // Get neighbour vertex id 
       int k = cols_arr[j];
       // Get neighbors color
       int kc = color_assignment[k];
+      n_colors[kc] = true;
       // Check if neighbors is already assigned the current color
       if (((kc != -1) && (kc != color)) || (i == k)) continue;
       // Get the neighbour random weight
@@ -41,8 +44,14 @@ __global__ void jpl_coloring_kernel(unsigned int num_nodes, unsigned int color, 
       }
     }
 
-    // Assign color if the current vertex is the leader
-    if (is_leader) color_assignment[i] = color;
+    // Assign least possible color if the current vertex is the leader
+    if (is_leader) {
+        for (int ci=0; ci <= color; ci++)
+           if (!n_colors[ci]){
+               color_assignment[i] = ci;
+               break;
+           }
+    }
   }
 }
 
