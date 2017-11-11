@@ -3,10 +3,10 @@ from scipy import sparse
 import sys
 
 if(len(sys.argv)!=3):
-    print "Usage : python gen_csr <ip_file> <op_file>"
+    print 'Usage : python gen_csr <ip_file> <op_file>'
     sys.exit(0)
 
-with open(sys.argv[1],"r") as f:
+with open(sys.argv[1],'r') as f:
     n = int(f.readline())
     arr = np.zeros(shape=(n,n))
     for l in f:
@@ -18,7 +18,7 @@ with open(sys.argv[1],"r") as f:
 
 csr = sparse.csr_matrix(arr)
 
-with open(sys.argv[2],"w") as f:
+with open(sys.argv[2],'w') as f:
     f.write(str(len(csr.indptr)) + ' ' + str(len(csr.indices)) + '\n')
-    f.write(str(csr.indptr).strip('[] ') + '\n')
-    f.write(str(csr.indices).strip('[] ') + '\n')    
+    np.savetxt(f,csr.indptr[None,:], fmt='%d', delimiter=' ')
+    np.savetxt(f,csr.indices[None,:], fmt='%d', delimiter=' ')    
