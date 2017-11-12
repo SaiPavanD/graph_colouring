@@ -14,7 +14,12 @@
 #define CUDA_MAX_BLOCKS 32*1024
 #define CUDA_MAX_THREADS 1024
 
-__global__ void check_correctness (unsigned int num_nodes, unsigned int *offset_arr,
+void print_color_info(unsigned int num_nodes, unsigned int c)
+{
+    printf("Nodes : %d, colors(range) : 0-%d\n", num_nodes, c);
+}
+
+__global__ void check_correctness_kernel(unsigned int num_nodes, unsigned int *offset_arr,
                                  unsigned int *cols_arr,  int *color_assignment, bool *result)
 
 {
@@ -27,12 +32,22 @@ __global__ void check_correctness (unsigned int num_nodes, unsigned int *offset_
       // Get neighbour vertex id
       unsigned int k =cols_arr[j];
       // Check neighbors color
+      if (i == k) continue;
       if (color_assignment[i] == color_assignment[k]) {
         printf("Node coloring error at %d,%d with color %d\n", i, k, color_assignment[i]);
         *result = false;
       }
     }
   }
+}
+
+__host__ void check_correctness (unsigned int num_nodes, unsigned int *offset_arr,
+                                 unsigned int *cols_arr,  int *color_assignment, bool *result)
+{
+    int num_threads = CUDA_MAX_THREADS;
+    int num_blocks = min(num_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
+    check_correctness_kernel<<<num_blocks, num_threads>>>(num_nodes, offset_arr, cols_arr, color_assignment, result);
+    return;
 }
 
 __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, unsigned int *offset_arr,
@@ -52,7 +67,11 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
 
     // Iterate over neighbours
     for (int mis_i = 0; mis_i < 10; mis_i++) {
-        if (r_iflags[i] != 0) break;
+        if (r_iflags[i] != 0) {
+            if(r_iflags[i] == 1)
+                is_leader = false;    
+            break;
+        }
         for (unsigned int j = offset_arr[i]; j < offset_arr[i+1]; j++) {
             // Get neighbour vertex id
             unsigned int k =cols_arr[j];
@@ -77,6 +96,8 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
           /*printf("\n");*/
           break;
         }
+        __threadfence();
+        /*__syncthreads();*/
     }
     // Assign least possible color if the current vertex is the leader
     if (is_leader) {
@@ -128,7 +149,7 @@ __host__ void mis_coloring(unsigned int num_nodes, unsigned int *offset_arr,
         if (nodes_left == 0)
             break;
     }
-    printf("Nodes : %d, colors : %d\n", num_nodes, c);
+    print_color_info(num_nodes, c);
 }
 
 __global__ void jpl_coloring_kernel(unsigned int num_nodes, unsigned int color, unsigned int *offset_arr,
@@ -205,7 +226,7 @@ __host__ void jpl_coloring(unsigned int num_nodes, unsigned int *offset_arr,
         if (nodes_left == 0)
             break;
     }
-    printf("Nodes : %d, colors : %d\n", num_nodes, c);
+    print_color_info(num_nodes, c);
 }
 
 __global__ void ldf_coloring_kernel(unsigned int num_nodes, unsigned int color, unsigned int *offset_arr,
@@ -286,5 +307,5 @@ __host__ void ldf_coloring(unsigned int num_nodes, unsigned int *offset_arr,
         if (nodes_left == 0)
             break;
     }
-    printf("Nodes : %d, colors : %d\n", num_nodes, c);
+    print_color_info(num_nodes, c);
 }
