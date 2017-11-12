@@ -29,22 +29,12 @@ int main(int argc, char *argv[])
         t_Ao[x_cord+1]++;
     }
 
-<<<<<<< HEAD
-    /*thrust::inclusive_scan(t_Ao.begin(), t_Ao.end(), t_A1.begin());*/
-    
-    thrust::device_vector<unsigned int> d_Ax = t_Ax, d_Ay = t_Ay, d_Ao = t_Ao;
-    thrust::sort_by_key(thrust::device, d_Ay.begin(), d_Ay.end(), d_Ax.begin());
-    thrust::sort_by_key(thrust::device, d_Ax.begin(), d_Ax.end(), d_Ay.begin());
-
-    thrust::inclusive_scan(thrust::device, d_Ao.begin(), d_Ao.end(), d_Ao.begin());
-=======
     std::cout << "Input reading done!" << std::endl;
 
     thrust::inclusive_scan(t_Ao.begin(), t_Ao.end(), t_Ao.begin());
 
     thrust::sort_by_key(t_Ay.begin(), t_Ay.end(), t_Ax.begin());
     thrust::sort_by_key(t_Ax.begin(), t_Ax.end(), t_Ay.begin());
->>>>>>> 0c57fa274647a25deb94a94cee748e47a693c403
 
     std::cout << n_nodes << " " << n_values << std::endl;
     for (unsigned int i=0; i<n_nodes+1; i++) {

@@ -1,3 +1,6 @@
+#define MIS_ALG 0
+#define JPL_ALG 1
+#define LDF_ALG 2
 
 /* Include this file in your main.cu */
 

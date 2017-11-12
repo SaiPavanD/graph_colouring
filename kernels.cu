@@ -5,23 +5,35 @@
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 #include <thrust/execution_policy.h>
+#include <thrust/random.h>
 
 #include <algorithm>
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
 
-#define CUDA_MAX_BLOCKS 32*1024
+#define CUDA_MAX_BLOCKS 32 * 1024
 #define CUDA_MAX_THREADS 1024
+
+struct PRNFunc
+{
+    uint32_t seed;
+    PRNFunc(uint32_t s) { seed = s; }
+    __device__ __host__ uint32_t operator()(uint32_t kn) const
+    {
+        thrust::minstd_rand randEng(seed);
+        randEng.discard(kn);
+        return randEng();
+    }
+};
 
 void print_color_info(unsigned int num_nodes, unsigned int c)
 {
-    printf("Nodes : %d, colors(range) : 0-%d\n", num_nodes, c);
+    printf("Nodes : %d, # of colors : %d\n", num_nodes, c+1);
 }
 
 __global__ void check_correctness_kernel(unsigned int num_nodes, unsigned int *offset_arr,
                                  unsigned int *cols_arr,  int *color_assignment, bool *result)
-
 {
   unsigned int tid = threadIdx.x+blockIdx.x*blockDim.x;
   unsigned int num_threads = blockDim.x*gridDim.x;
@@ -45,7 +57,7 @@ __host__ void check_correctness (unsigned int num_nodes, unsigned int *offset_ar
                                  unsigned int *cols_arr,  int *color_assignment, bool *result)
 {
     int num_threads = CUDA_MAX_THREADS;
-    int num_blocks = min(num_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
+    int num_blocks = min((num_nodes + num_threads - 1)/num_threads ,CUDA_MAX_BLOCKS);
     check_correctness_kernel<<<num_blocks, num_threads>>>(num_nodes, offset_arr, cols_arr, color_assignment, result);
     return;
 }
@@ -66,15 +78,17 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
     if ((color_assignment[i] != -1)) continue;
 
     // Iterate over neighbours
-    for (int mis_i = 0; mis_i < 10; mis_i++) {
-        if (r_iflags[i] != 0) {
-            if(r_iflags[i] == 1)
-                is_leader = false;    
-            break;
-        }
+    int optimal_iter = 1;
+    for (int mis_i = 0; mis_i < optimal_iter; mis_i++) {
+        /*if (r_iflags[i] != 0) {*/
+            /*// if neighbour to some node ignore and break*/
+            /*if(r_iflags[i] == 1)*/
+                /*is_leader = false;    */
+            /*break;*/
+        /*}*/
         for (unsigned int j = offset_arr[i]; j < offset_arr[i+1]; j++) {
             // Get neighbour vertex id
-            unsigned int k =cols_arr[j];
+            unsigned int k = cols_arr[j];
             // Get neighbors color
             int kc = color_assignment[k];
             // Skip if neighbor is already colored(removed from graph)
@@ -83,28 +97,28 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
             unsigned int kr = random_wts[k];
             // Local maximum condition
             /*if (r_iflags[k] != 2) continue;*/
-            if ((unsigned int)random_wts[i] <= kr) {
+            if ((unsigned int)random_wts[i] < kr) {
                 is_leader = false;
+                break;
             }
         }
-        if (is_leader) {
-           r_iflags[i] = 2;
-           /*printf("l%d->%d ",color, i);*/
-          for (unsigned int jj = offset_arr[i]; jj < offset_arr[i+1]; jj++) {
-            r_iflags[jj] = 1;
-          }
-          /*printf("\n");*/
-          break;
-        }
-        __threadfence();
+        /*if (is_leader) {*/
+           /*r_iflags[i] = 2;*/
+          /*for (unsigned int jj = offset_arr[i]; jj < offset_arr[i+1]; jj++) {*/
+            /*r_iflags[jj] = 1;*/
+          /*}*/
+          /*break;*/
+        /*}*/
+        /*__threadfence();*/
         /*__syncthreads();*/
     }
-    // Assign least possible color if the current vertex is the leader
+    // Assign color if the current vertex is the leader
     if (is_leader) {
         color_assignment[i] = color;
     }
   }
 }
+
 
 __host__ void mis_coloring(unsigned int num_nodes, unsigned int *offset_arr,
                                  unsigned int *cols_arr, int *color_assignment)
@@ -114,6 +128,7 @@ __host__ void mis_coloring(unsigned int num_nodes, unsigned int *offset_arr,
     //generate rand perm
     thrust::device_vector<unsigned int> d_randoms(num_nodes);
     thrust::device_vector<unsigned int> d_iflags(num_nodes);
+    thrust::device_vector<unsigned int> t_keys(num_nodes);
 
     thrust::sequence(d_randoms.begin(), d_randoms.end());
     /*for (int lo=0; lo<num_nodes; lo++) {*/
@@ -131,7 +146,9 @@ __host__ void mis_coloring(unsigned int num_nodes, unsigned int *offset_arr,
     int num_blocks = min(num_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
     int c = 0;
     for(c = 0; c < num_nodes; c++) {
-        std::random_shuffle(d_randoms.begin(), d_randoms.end());
+        thrust::tabulate(thrust::device, t_keys.begin(), t_keys.end(), PRNFunc(rand() * rand()));
+        thrust::sort_by_key(thrust::device, t_keys.begin(), t_keys.end(), d_randoms.begin());
+        /*std::random_shuffle(d_randoms.begin(), d_randoms.end());*/
         /*if ((c == 1 || c == 0)) {*/
             /*for (int lo=0; lo<num_nodes; lo++) {*/
                 /*std::cout << d_randoms[lo] << " ";*/
@@ -205,7 +222,10 @@ __host__ void jpl_coloring(unsigned int num_nodes, unsigned int *offset_arr,
     //generate rand perm
     thrust::device_vector<unsigned int> d_randoms(num_nodes);
     thrust::sequence(d_randoms.begin(), d_randoms.end());
-    std::random_shuffle(d_randoms.begin(), d_randoms.end());
+    thrust::device_vector<unsigned int> t_keys(num_nodes);
+    thrust::tabulate(thrust::device, t_keys.begin(), t_keys.end(), PRNFunc(rand() * rand()));
+    thrust::sort_by_key(thrust::device, t_keys.begin(), t_keys.end(), d_randoms.begin()); 
+    /*std::random_shuffle(d_randoms.begin(), d_randoms.end());*/
 
     unsigned int *r_randoms = thrust::raw_pointer_cast(d_randoms.data());
     // init colors to -1
@@ -286,7 +306,11 @@ __host__ void ldf_coloring(unsigned int num_nodes, unsigned int *offset_arr,
     //generate rand perm
     thrust::device_vector<unsigned int> d_randoms(num_nodes);
     thrust::sequence(d_randoms.begin(), d_randoms.end());
-    std::random_shuffle(d_randoms.begin(), d_randoms.end());
+
+    thrust::device_vector<unsigned int> t_keys(num_nodes);
+    thrust::tabulate(thrust::device, t_keys.begin(), t_keys.end(), PRNFunc(rand() * rand()));
+    thrust::sort_by_key(thrust::device, t_keys.begin(), t_keys.end(), d_randoms.begin()); 
+    /*std::random_shuffle(d_randoms.begin(), d_randoms.end());*/
 
     unsigned int *r_randoms = thrust::raw_pointer_cast(d_randoms.data());
     // init colors to -1
@@ -294,7 +318,7 @@ __host__ void ldf_coloring(unsigned int num_nodes, unsigned int *offset_arr,
 
     // Find all maximal independent sets and assign colors to them
     int num_threads = CUDA_MAX_THREADS;
-    int num_blocks = min(num_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
+    int num_blocks = min((num_nodes + num_threads - 1)/num_threads ,CUDA_MAX_BLOCKS);
     int c = 0;
     for(c = 0; c < num_nodes; c++) {
         jpl_coloring_kernel<<<num_blocks, num_threads>>>(num_nodes, c, offset_arr, cols_arr, r_randoms, color_assignment);
