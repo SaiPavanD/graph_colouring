@@ -19,11 +19,11 @@ int main(int argc, char *argv[])
     unsigned int n_nodes, n_values;
     std::cin >> n_nodes >> n_values;
 
-    thrust::host_vector<unsigned int> t_Ax(n_values), t_Ay(n_values), t_Ao(n_nodes+1), t_A1(n_nodes+1);
-    thrust::fill(t_Ao.begin(), t_Ao.end(), 0);
+    thrust::host_vector<unsigned int> t_Ax(n_values), t_Ay(n_values), t_Ao(n_nodes+1);
+    thrust::fill(thrust::device, t_Ao.begin(), t_Ao.end(), 0);
     unsigned int x_cord, y_cord;
     for (int ti=0; ti<n_values; ti++) {
-        std::cin >> x_cord >> y_cord; 
+        std::cin >> x_cord >> y_cord;
         t_Ax[ti] = x_cord;
         t_Ay[ti] = y_cord;
         t_Ao[x_cord+1]++;
@@ -31,18 +31,20 @@ int main(int argc, char *argv[])
 
     /*thrust::inclusive_scan(t_Ao.begin(), t_Ao.end(), t_A1.begin());*/
     
-    thrust::device_vector<unsigned int> d_Ax = t_Ax, d_Ay = t_Ay, d_Ao = t_Ao, d_A1 = t_A1;
+    thrust::device_vector<unsigned int> d_Ax = t_Ax, d_Ay = t_Ay, d_Ao = t_Ao;
     thrust::sort_by_key(thrust::device, d_Ay.begin(), d_Ay.end(), d_Ax.begin());
     thrust::sort_by_key(thrust::device, d_Ax.begin(), d_Ax.end(), d_Ay.begin());
 
+    thrust::inclusive_scan(thrust::device, d_Ao.begin(), d_Ao.end(), d_Ao.begin());
+
     std::cout << n_nodes << " " << n_values << std::endl;
     for (unsigned int i=0; i<n_nodes+1; i++) {
-        std::cout <<  t_A1[i] << " ";
+        std::cout <<  d_Ao[i] << " ";
     }
     printf("\n");
 
     for (unsigned int i=0; i<n_values; i++) {
-        std::cout << t_Ay[i] << " ";
+        std::cout << d_Ay[i] << " ";
     }
     printf("\n");
     return 0;

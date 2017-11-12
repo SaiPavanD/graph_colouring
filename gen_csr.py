@@ -6,17 +6,22 @@ if(len(sys.argv)!=3):
     print 'Usage : python gen_csr <ip_file> <op_file>'
     sys.exit(0)
 
-with open(sys.argv[1],'r') as f:
-    n = int(f.readline())
-    arr = np.zeros(shape=(n,n))
-    for l in f:
-        n1,n2 = map(int, l.split(' '))
-        if n1 == n2:
-            continue
-        arr[n1][n2] = 1
-        arr[n2][n1] = 1
+num_nodes = 0
+num_edges = 0
 
-csr = sparse.csr_matrix(arr)
+col1 = []
+col2 = []
+
+with open(sys.argv[1],'r') as f:
+    num_nodes , num_edges = map(int, f.readline().split())
+    for l in f:
+        n1,n2 = map(int, l.split())
+        col1.append(n1)
+        col2.append(n2)
+
+dat = [1] * num_edges
+
+csr = sparse.csr_matrix((dat,(col1,col2)),shape=(num_nodes,num_nodes))
 
 with open(sys.argv[2],'w') as f:
     f.write(str(len(csr.indptr)-1) + ' ' + str(len(csr.indices)) + '\n')

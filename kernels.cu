@@ -11,7 +11,8 @@
 #include <cstdlib>
 #include <ctime>
 
-#define CUDA_MAX_BLOCKS 1024
+#define CUDA_MAX_BLOCKS 32*1024
+#define CUDA_MAX_THREADS 1024
 
 __global__ void check_correctness (unsigned int num_nodes, unsigned int *offset_arr,
                                  unsigned int *cols_arr,  int *color_assignment, bool *result)
@@ -105,7 +106,7 @@ __host__ void mis_coloring(unsigned int num_nodes, unsigned int *offset_arr,
     thrust::fill(thrust::device, color_assignment, color_assignment + num_nodes, -1);
 
     // Find all maximal independent sets and assign colors to them
-    int num_threads = 256;
+    int num_threads = CUDA_MAX_THREADS;
     int num_blocks = min(num_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
     int c = 0;
     for(c = 0; c < num_nodes; c++) {
@@ -190,7 +191,7 @@ __host__ void jpl_coloring(unsigned int num_nodes, unsigned int *offset_arr,
     thrust::fill(thrust::device, color_assignment, color_assignment + num_nodes, -1);
 
     // Find all maximal independent sets and assign colors to them
-    int num_threads = 256;
+    int num_threads = CUDA_MAX_THREADS;
     int num_blocks = min(num_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
     int c = 0;
     for(c = 0; c < num_nodes; c++) {
@@ -271,7 +272,7 @@ __host__ void ldf_coloring(unsigned int num_nodes, unsigned int *offset_arr,
     thrust::fill(thrust::device, color_assignment, color_assignment + num_nodes, -1);
 
     // Find all maximal independent sets and assign colors to them
-    int num_threads = 256;
+    int num_threads = CUDA_MAX_THREADS;
     int num_blocks = min(num_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
     int c = 0;
     for(c = 0; c < num_nodes; c++) {
