@@ -1,10 +1,13 @@
+#define MIS_ALG 0
+#define JPL_ALG 1
+#define LDF_ALG 2
 
 /* Include this file in your main.cu */
 
 #ifndef KERNEL_H
 #define KERNEL_H
 
-__global__ void check_correctness (unsigned int num_nodes, unsigned int *offset_arr,
+__host__ void check_correctness (unsigned int num_nodes, unsigned int *offset_arr,
                                  unsigned int *cols_arr,  int *color_assignment, bool *result);
 
 __host__ void mis_coloring(unsigned int num_nodes, unsigned int *offset_arr,

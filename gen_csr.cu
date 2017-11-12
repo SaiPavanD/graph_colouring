@@ -38,12 +38,12 @@ int main(int argc, char *argv[])
 
     std::cout << n_nodes << " " << n_values << std::endl;
     for (unsigned int i=0; i<n_nodes+1; i++) {
-        std::cout <<  t_Ao[i] << " ";
+        std::cout <<  d_Ao[i] << " ";
     }
     printf("\n");
 
     for (unsigned int i=0; i<n_values; i++) {
-        std::cout << t_Ay[i] << " ";
+        std::cout << d_Ay[i] << " ";
     }
     printf("\n");
     return 0;

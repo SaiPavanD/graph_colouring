@@ -14,11 +14,20 @@
 #include <cstdlib>
 #include <ctime>
 
-#define CUDA_MAX_BLOCKS 32*1024
-#define CUDA_MAX_THREADS 1024
 
 int main(int argc, char *argv[])
 {
+    int default_alg = MIS_ALG;
+
+    if (argc == 2) {
+        std::string a = std::string(argv[1]);
+        if (a.compare(6, 3, "mis") == 0)
+            default_alg = MIS_ALG;
+        else if (a.compare(6, 3, "jpl") == 0)
+            default_alg = JPL_ALG;
+        else if (a.compare(6, 3, "ldf") == 0)
+            default_alg = LDF_ALG;
+    }
     unsigned int n_nodes, n_values;
     /*unsigned n_edges;*/
     std::cin >> n_nodes >> n_values;
@@ -66,10 +75,26 @@ int main(int argc, char *argv[])
     cudaHostAlloc(&result, sizeof(bool), 0);
     *result = true;
 
-    jpl_coloring(n_nodes, r_Ao, r_Ac, r_c);
-    int num_threads = CUDA_MAX_THREADS;
-    int num_blocks = min(n_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
-    check_correctness<<<num_blocks, num_threads>>>(n_nodes, r_Ao, r_Ac, r_c, result);
+    switch(default_alg) {
+        
+        case MIS_ALG:
+            std::cout << "Running MIS_ALG on " << n_nodes << " nodes" << std::endl;
+            mis_coloring(n_nodes, r_Ao, r_Ac, r_c);
+            break;
+        case JPL_ALG:
+            std::cout << "Running JPL_ALG on " << n_nodes << " nodes" << std::endl;
+            jpl_coloring(n_nodes, r_Ao, r_Ac, r_c);
+            break;
+        case LDF_ALG:
+            std::cout << "Running LDF_ALG on " << n_nodes << " nodes" << std::endl;
+            ldf_coloring(n_nodes, r_Ao, r_Ac, r_c);
+            break;
+        default:
+            std::cerr << "Invalid alg" << std::endl;
+            return 0;
+    }
+    /*cudaDeviceSynchronize();*/
+    check_correctness(n_nodes, r_Ao, r_Ac, r_c, result);
 
     cudaDeviceSynchronize();
     if(*result)
