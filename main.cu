@@ -14,7 +14,8 @@
 #include <cstdlib>
 #include <ctime>
 
-#define CUDA_MAX_BLOCKS 1024
+#define CUDA_MAX_BLOCKS 32*1024
+#define CUDA_MAX_THREADS 1024
 
 int main(int argc, char *argv[])
 {
@@ -22,7 +23,7 @@ int main(int argc, char *argv[])
     /*unsigned n_edges;*/
     std::cin >> n_nodes >> n_values;
     /*n_values = 2 * n_edges;*/
-    
+
     /*thrust::host_vector<unsigned int> t_Ax(n_values), t_Ay(n_values), t_Ao(n_nodes+1);*/
     /*thrust::fill(t_Ao.begin(), t_Ao.end(), 0);*/
     /*unsigned int x_cord, y_cord;*/
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
     /*}*/
 
     /*thrust::inclusive_scan(t_Ao.begin(), t_Ao.end(), t_Ao.begin());*/
-    
+
     /*for (int ind = 0; ind < n_nodes+1; ind++) {*/
         /*std::cout << t_Ao[ind] << " " ;*/
     /*}*/
@@ -66,12 +67,12 @@ int main(int argc, char *argv[])
     *result = true;
 
     ldf_coloring(n_nodes, r_Ao, r_Ac, r_c);
-    int num_threads = 256;
+    int num_threads = CUDA_MAX_THREADS;
     int num_blocks = min(n_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
     check_correctness<<<num_blocks, num_threads>>>(n_nodes, r_Ao, r_Ac, r_c, result);
 
     cudaDeviceSynchronize();
-    if(result)
+    if(*result)
       std::cout << "Check successful " << std::endl;
     else
       std::cout << "Check failed " << std::endl;
