@@ -51,6 +51,7 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
     // Ignore if already colored
     if ((color_assignment[i] != -1)) continue;
 
+    unsigned int ir = (unsigned int)random_wts[i];
     // Iterate over neighbours
     for (int mis_i = 0; mis_i < 10; mis_i++) {
         if (r_iflags[i] != 0)
@@ -69,8 +70,9 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
             unsigned int kr = random_wts[k];
             // Local maximum condition
             /*if (r_iflags[k] != 2) continue;*/
-            if ((unsigned int)random_wts[i] <= kr) {
+            if (ir <= kr) {
                 is_leader = false;
+                break;
             }
         }
         if (is_leader) {
@@ -152,6 +154,7 @@ __global__ void jpl_coloring_kernel(unsigned int num_nodes, unsigned int color, 
 
     bool *n_colors = new bool[color+1];
     memset(n_colors, 0, sizeof(n_colors));
+    unsigned int ir = (unsigned int)random_wts[i];
     // Iterate over neighbours
     for (unsigned int j = offset_arr[i]; j < offset_arr[i+1]; j++) {
       // Get neighbour vertex id
@@ -164,8 +167,9 @@ __global__ void jpl_coloring_kernel(unsigned int num_nodes, unsigned int color, 
       // Get the neighbour random weight
       unsigned int kr = random_wts[k];
       // Local maximum condition
-      if ((unsigned int)random_wts[i] <= kr) {
+      if (ir <= kr) {
           is_leader = false;
+          break;
       }
     }
 
@@ -247,6 +251,7 @@ __global__ void ldf_coloring_kernel(unsigned int num_nodes, unsigned int color, 
       // Local maximum condition
       if ((id<kd) || ((id==kd)&&(ir<=kr))) {
           is_leader = false;
+          break;
       }
     }
 
