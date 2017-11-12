@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     cudaHostAlloc(&result, sizeof(bool), 0);
     *result = true;
 
-    ldf_coloring(n_nodes, r_Ao, r_Ac, r_c);
+    jpl_coloring(n_nodes, r_Ao, r_Ac, r_c);
     int num_threads = CUDA_MAX_THREADS;
     int num_blocks = min(n_nodes/num_threads + 1,CUDA_MAX_BLOCKS);
     check_correctness<<<num_blocks, num_threads>>>(n_nodes, r_Ao, r_Ac, r_c, result);

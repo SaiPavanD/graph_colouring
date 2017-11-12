@@ -27,6 +27,7 @@ __global__ void check_correctness (unsigned int num_nodes, unsigned int *offset_
       // Get neighbour vertex id
       unsigned int k =cols_arr[j];
       // Check neighbors color
+      if (i == k) continue;
       if (color_assignment[i] == color_assignment[k]) {
         printf("Node coloring error at %d,%d with color %d\n", i, k, color_assignment[i]);
         *result = false;
@@ -52,7 +53,11 @@ __global__ void mis_coloring_kernel(unsigned int num_nodes, unsigned int color, 
 
     // Iterate over neighbours
     for (int mis_i = 0; mis_i < 10; mis_i++) {
-        if (r_iflags[i] != 0) break;
+        if (r_iflags[i] != 0)
+        {
+          if(r_iflags[i] == 1)  is_leader = false;
+          break;
+        }
         for (unsigned int j = offset_arr[i]; j < offset_arr[i+1]; j++) {
             // Get neighbour vertex id
             unsigned int k =cols_arr[j];
@@ -153,7 +158,7 @@ __global__ void jpl_coloring_kernel(unsigned int num_nodes, unsigned int color, 
       unsigned int k =cols_arr[j];
       // Get neighbors color
       int kc = color_assignment[k];
-      n_colors[kc] = true;
+      if(kc != -1)  n_colors[kc] = true;
       // Skip if neighbor is already colored(removed from graph)
       if (((kc != -1) && (kc != color)) || (i == k)) continue;
       // Get the neighbour random weight
@@ -233,7 +238,7 @@ __global__ void ldf_coloring_kernel(unsigned int num_nodes, unsigned int color, 
       unsigned int k =cols_arr[j];
       // Get neighbors color
       int kc = color_assignment[k];
-      n_colors[kc] = true;
+      if(kc != -1)  n_colors[kc] = true;
       // Skip if neighbor is already colored(removed from graph)
       if (((kc != -1) && (kc != color)) || (i == k)) continue;
       // Get the random weights and degrees of the neighbors

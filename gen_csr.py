@@ -26,4 +26,5 @@ csr = sparse.csr_matrix((dat,(col1,col2)),shape=(num_nodes,num_nodes))
 with open(sys.argv[2],'w') as f:
     f.write(str(len(csr.indptr)-1) + ' ' + str(len(csr.indices)) + '\n')
     np.savetxt(f,csr.indptr[None,:], fmt='%d', delimiter=' ')
+    f.write('\n')
     np.savetxt(f,csr.indices[None,:], fmt='%d', delimiter=' ')
